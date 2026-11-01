@@ -27,25 +27,33 @@ window.scrollTo(0,0);
 };
 const toggle=(id:string)=>setList(list.map(x=>x.id===id?{...x,present:!x.present}:x));
 const getIni=(n:string)=>{const a=n.trim().split(" ").filter(Boolean);if(a.length===0)return "?";if(a.length===1)return a[0].slice(0,2).toUpperCase();return (a[0][0]+a[a.length-1][0]).toUpperCase();};
-const today=new Date().toISOString().slice(5,10);
-const bday=list.filter((x:any)=>x.bd&&x.bd.slice(5,10)===today);
+const [bday, setBday] = useState<any[]>([]);
+
 useEffect(()=>{
- if(bday.length>0&&!bdSent){
-  const k="bd_"+new Date().toISOString().slice(0,10);
-  if(!localStorage.getItem(k)){
-   const ok=confirm("🎂 "+bday.length+" birthday today! AUTO SEND WA+SMS?");
-   if(ok){
-    bday.forEach((c:any,i:number)=>{
-     setTimeout(()=>{
-      let p2=c.phone.replace(/\D/g,"");p2=p2.startsWith("0")?"233"+p2.slice(1):p2;
-      window.open("https://wa.me/"+p2+"?text="+encodeURIComponent("🎂 Happy Birthday "+c.name),"_blank");
-      setTimeout(()=>{window.open("sms:"+c.phone+"?body="+encodeURIComponent("Happy Birthday "+c.name),"_blank");},1200);
-     },i*3500);
-    });
-    localStorage.setItem(k,"yes");setBdSent(true);
-   }
+  // Safe - runs only on browser
+  const today = new Date().toISOString().slice(5,10);
+  const filtered = list.filter((x:any)=> x.bd && x.bd.slice && x.bd.slice(5,10)===today);
+  setBday(filtered);
+
+  if(filtered.length>0){
+    const k="bd_"+new Date().toISOString().slice(0,10);
+    if(!localStorage.getItem(k)){
+      const ok=confirm("🎂 "+filtered.length+" birthday today! AUTO SEND WA+SMS?");
+      if(ok){
+        filtered.forEach((c:any,i:number)=>{
+          setTimeout(()=>{
+            let p2=c.phone.replace(/\D/g,"");
+            p2=p2.startsWith("0")?"233"+p2.slice(1):p2;
+            // Your auto send logic here - KEEP IT
+            const msg=`Happy Birthday ${c.name}! 🎂 From COP Amanfrom Sunday School`;
+            window.open(`https://wa.me/${p2}?text=${encodeURIComponent(msg)}`, '_blank');
+          }, i*1500);
+        });
+        localStorage.setItem(k, "1");
+      }
+    }
   }
- }
+},[list]);
 },[bday,bdSent]);
 const sendWA=(c:any,b:boolean)=>{let p2=c.phone.replace(/\D/g,"");p2=p2.startsWith("0")?"233"+p2.slice(1):p2;const m=b?"Happy Birthday "+c.name:"We missed "+c.name+" today 7:00-9:30AM";window.open("https://wa.me/"+p2+"?text="+encodeURIComponent(m),"_blank");};
 const sendSMS=(c:any,b:boolean)=>{const m=b?"Happy Birthday "+c.name:"Missed "+c.name+" today";window.open("sms:"+c.phone+"?body="+encodeURIComponent(m),"_blank");};
