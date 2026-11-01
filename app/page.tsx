@@ -1,64 +1,97 @@
 "use client";
-import {useState,useEffect} from "react";
-type C={id:string;name:string;age:number;bd:string;phone:string;type:string;present:boolean;img?:string};
+import { useState, useEffect } from "react";
+
+type Child = { id:string; name:string; phone:string; bd:string; class:string; present:boolean };
+
 export default function Home(){
-const [list,setList]=useState<C[]>([]);
-const [name,setName]=useState("");const [age,setAge]=useState("");const [bd,setBd]=useState("");const [ph,setPh]=useState("");const [img,setImg]=useState("");
-const [ctype,setCtype]=useState("both");const [show,setShow]=useState(false);
-const [u,setU]=useState("");const [p,setP]=useState("");const [log,setLog]=useState(false);const [bdSent,setBdSent]=useState(false);
-const [tab,setTab]=useState("home");
-const [editId,setEditId]=useState<string|null>(null);
-useEffect(()=>{const s=localStorage.getItem("cop_final_v3");if(s){try{setList(JSON.parse(s))}catch{}}},[]);
-useEffect(()=>{localStorage.setItem("cop_final_v3",JSON.stringify(list))},[list]);
-const onImg=(e:any)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>setImg(r.result as string);r.readAsDataURL(f);};
-const add=()=>{
-if(!name||!ph)return alert("Name & Phone");
-if(editId){
- setList(list.map(x=>x.id===editId?{...x,name,age:Number(age),bd,phone:ph,type:ctype,img}:x));
- setEditId(null);
-}else{
- setList([...list,{id:Date.now().toString(),name,age:Number(age),bd,phone:ph,type:ctype,present:false,img}]);
-}
-setName("");setAge("");setBd("");setPh("");setImg("");setShow(false);setTab("children");
-};
-const startEdit=(c:C)=>{
-setEditId(c.id);setName(c.name);setAge(c.age.toString());setBd(c.bd);setPh(c.phone);setCtype(c.type);setImg(c.img||"");setShow(true);setTab("children");
-window.scrollTo(0,0);
-};
-const toggle=(id:string)=>setList(list.map(x=>x.id===id?{...x,present:!x.present}:x));
-const getIni=(n:string)=>{const a=n.trim().split(" ").filter(Boolean);if(a.length===0)return "?";if(a.length===1)return a[0].slice(0,2).toUpperCase();return (a[0][0]+a[a.length-1][0]).toUpperCase();};
-const [bday, setBday] = useState<any[]>([]);
+  const [list,setList]=useState<Child[]>([]);
+  const [name,setName]=useState("");
+  const [phone,setPhone]=useState("");
+  const [bd,setBd]=useState("");
+  const [cls,setCls]=useState("Beginners");
 
-useEffect(()=>{
-  // Safe - runs only on browser
-  const today = new Date().toISOString().slice(5,10);
-  const filtered = list.filter((x:any)=> x.bd && x.bd.slice && x.bd.slice(5,10)===today);
-  setBday(filtered);
+  useEffect(()=>{
+    const saved = localStorage.getItem("sunday-school");
+    if(saved) setList(JSON.parse(saved));
+  },[]);
 
-  if(filtered.length>0){
-    const k="bd_"+new Date().toISOString().slice(0,10);
-    if(!localStorage.getItem(k)){
-      const ok=confirm("🎂 "+filtered.length+" birthday today! AUTO SEND WA+SMS?");
-      if(ok){
-        filtered.forEach((c:any,i:number)=>{
-          setTimeout(()=>{
-            let p2=c.phone.replace(/\D/g,"");
-            p2=p2.startsWith("0")?"233"+p2.slice(1):p2;
-            // Your auto send logic here - KEEP IT
-            const msg=`Happy Birthday ${c.name}! 🎂 From COP Amanfrom Sunday School`;
-            window.open(`https://wa.me/${p2}?text=${encodeURIComponent(msg)}`, '_blank');
-          }, i*1500);
-        });
-        localStorage.setItem(k, "1");
+  useEffect(()=>{
+    localStorage.setItem("sunday-school", JSON.stringify(list));
+    if(list.length>0){
+      const today = new Date().toISOString().slice(5,10);
+      const todays = list.filter(x=> x.bd && x.bd.slice(5,10)===today);
+      if(todays.length>0){
+        const k="bd_"+new Date().toISOString().slice(0,10);
+        if(!localStorage.getItem(k)){
+          const ok = confirm("🎂 "+todays.length+" birthday(s) today! AUTO SEND WhatsApp?");
+          if(ok){
+            todays.forEach((c:any,i:number)=>{
+              setTimeout(()=>{
+                let p=c.phone.replace(/\D/g,"");
+                if(p.startsWith("0")) p="233"+p.slice(1);
+                const msg=`Happy Birthday ${c.name}! 🎂🎉 From COP Amanfrom Sunday School`;
+                window.open(`https://wa.me/${p}?text=${encodeURIComponent(msg)}`, "_blank");
+              }, i*2000);
+            });
+            localStorage.setItem(k,"1");
+          }
+        }
       }
     }
-  }
-},[list]);
-},[bday,bdSent]);
-const sendWA=(c:any,b:boolean)=>{let p2=c.phone.replace(/\D/g,"");p2=p2.startsWith("0")?"233"+p2.slice(1):p2;const m=b?"Happy Birthday "+c.name:"We missed "+c.name+" today 7:00-9:30AM";window.open("https://wa.me/"+p2+"?text="+encodeURIComponent(m),"_blank");};
-const sendSMS=(c:any,b:boolean)=>{const m=b?"Happy Birthday "+c.name:"Missed "+c.name+" today";window.open("sms:"+c.phone+"?body="+encodeURIComponent(m),"_blank");};
-const sendBdayAll=()=>{if(bday.length===0)return;if(!confirm("AUTO SEND Birthday to "+bday.length+"?"))return;bday.forEach((c:any,i:number)=>{setTimeout(()=>{let p2=c.phone.replace(/\D/g,"");p2=p2.startsWith("0")?"233"+p2.slice(1):p2;window.open("https://wa.me/"+p2+"?text="+encodeURIComponent("Happy Birthday "+c.name),"_blank");setTimeout(()=>{window.open("sms:"+c.phone+"?body="+encodeURIComponent("Happy Birthday "+c.name),"_blank");},1200);},i*3500);});};
-const finishBoth=()=>{const ab=list.filter(x=>!x.present);if(ab.length===0){alert("All present");return;}if(!confirm(ab.length+" absent. AUTO SEND WA+SMS?"))return;ab.forEach((c:any,i:number)=>{setTimeout(()=>{let p2=c.phone.replace(/\D/g,"");p2=p2.startsWith("0")?"233"+p2.slice(1):p2;window.open("https://wa.me/"+p2+"?text="+encodeURIComponent("We missed "+c.name+" today"),"_blank");setTimeout(()=>{window.open("sms:"+c.phone+"?body="+encodeURIComponent("Missed "+c.name),"_blank");},1200);},i*3500);});alert("AUTO SENDING "+ab.length);};
-if(!log)return(<div style={{minHeight:"100vh",display:"flex",justifyContent:"center",alignItems:"center",background:"#f0f6ff",padding:20}}><div style={{background:"white",padding:24,borderRadius:16,width:360,textAlign:"center"}}><img src="/logo.png" width={80} style={{margin:"0 auto",display:"block"}}/><h2 style={{fontSize:14,fontWeight:800,color:"#00209F",marginTop:10}}>COP Amanfrom English Assembly<br/>Sunday School Tracker</h2><input value={u} onChange={e=>setU(e.target.value)} placeholder="Username" style={{width:"100%",padding:10,borderRadius:8,border:"1px solid #ccc",marginTop:14}}/><input value={p} onChange={e=>setP(e.target.value)} placeholder="Password" type="password" style={{width:"100%",padding:10,borderRadius:8,border:"1px solid #ccc",marginTop:8}}/><button onClick={()=>{if(u==="admin"&&p==="123")setLog(true);else alert("admin / 123")}} style={{width:"100%",padding:10,background:"#00209F",color:"white",border:"none",borderRadius:8,marginTop:10,fontWeight:"bold"}}>Login</button></div></div>);
-return(<main style={{minHeight:"100vh",background:"#f5f8ff",padding:10,display:"flex",justifyContent:"center"}}><div style={{width:"100%",maxWidth:420,background:"white",borderRadius:24,overflow:"hidden",boxShadow:"0 8px 20px rgba(0,0,0,0.1)"}}><div style={{background:"#00209F",padding:12,color:"white",display:"flex",gap:10,alignItems:"center"}}><img src="/logo.png" width={46} style={{borderRadius:99,background:"white",padding:3}}/><div><b style={{fontSize:11}}>COP Amanfrom English Assembly</b><div style={{color:"#FFD700",fontSize:8,fontWeight:"bold"}}>Sunday School Tracker</div></div></div><div style={{display:"flex",background:"#eee",padding:4,gap:4}}>{["home","children","attendance","birthdays"].map(t=><button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:8,borderRadius:8,border:"none",fontSize:10,fontWeight:"bold",textTransform:"capitalize",background:tab===t?"#00209F":"white",color:tab===t?"white":"#333"}}>{t==="home"?"🏠 Home":t==="children"?"👶 Children ("+list.length+")":t==="attendance"?"📝 Attendance": "🎂 Birthdays ("+bday.length+")"}</button>)}</div><div style={{padding:12, minHeight:400}}>{tab==="home"&&<div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}><div style={{background:"#00209F",color:"white",borderRadius:12,padding:14,textAlign:"center"}}><div style={{fontSize:10}}>Total Children</div><div style={{fontSize:32,fontWeight:900,color:"#FFD700"}}>{list.length}</div></div><div style={{background:"#FFD700",borderRadius:12,padding:14,textAlign:"center",border:"2px solid #00209F"}}><div style={{fontSize:10,fontWeight:"bold"}}>Present Today</div><div style={{fontSize:32,fontWeight:900,color:"#00209F"}}>{list.filter(x=>x.present).length}</div><div style={{fontSize:8}}>{list.filter(x=>!x.present).length} Absent • {bday.length} Birthday</div></div></div><div style={{marginTop:12,background:"#f0f6ff",borderRadius:12,padding:12}}><b style={{fontSize:12,color:"#00209F"}}>Quick Actions</b><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:8}}><button onClick={()=>{setTab("children");setShow(true);}} style={{background:"#FFD700",borderRadius:10,padding:12,fontWeight:"bold",border:"none"}}>+ Add Child 📸</button><button onClick={()=>setTab("attendance")} style={{background:"#00209F",color:"white",borderRadius:10,padding:12,fontWeight:"bold",border:"none"}}>Take Attendance</button></div><button onClick={()=>setTab("birthdays")} style={{width:"100%",marginTop:8,background:"#fce7f3",border:"2px solid #f472b6",borderRadius:10,padding:10,fontWeight:"bold",color:"#be185d"}}>🎂 View Birthdays Today ({bday.length}) - AUTO</button><button onClick={finishBoth} style={{width:"100%",marginTop:8,background:"#dc2626",color:"white",padding:12,borderRadius:12,border:"none",fontWeight:900,fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width={18} height={18}/> + <img src="https://cdn-icons-png.flaticon.com/512/546/546394.png" width={14} height={14}/> AUTO SEND ABSENT WA+SMS</button></div></div>}{tab==="children"&&<div><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><b style={{fontSize:14,color:"#00209F"}}>Children ({list.length}) - Edit Added!</b><button onClick={()=>{setEditId(null);setName("");setAge("");setBd("");setPh("");setImg("");setShow(true);}} style={{background:"#00209F",color:"white",border:"none",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:"bold"}}>+ Add</button></div>{show&&<div style={{background:"#f9fafb",borderRadius:12,padding:10,marginTop:8,border:"2px solid #00209F"}}><div style={{textAlign:"center"}}><b style={{fontSize:12,color:"#00209F"}}>{editId?"✏️ Edit Child":"➕ Add Child"}</b><br/>{img?<img src={img} width={70} height={70} style={{borderRadius:99,objectFit:"cover",border:"3px solid #00209F",marginTop:6}}/>:<div style={{width:70,height:70,borderRadius:99,background:"#FFD700",margin:"6px auto",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:20,color:"#00209F"}}>{name?getIni(name):"📸"}</div>}<br/><input type="file" accept="image/*" onChange={onImg} style={{fontSize:10,marginTop:6}}/></div><input value={name} onChange={e=>setName(e.target.value)} placeholder="Full Name e.g. Kofi Manu (KM)" style={{width:"100%",padding:8,borderRadius:8,border:"1px solid #ccc",marginTop:6,fontSize:12}}/><input value={age} onChange={e=>setAge(e.target.value)} placeholder="Age" type="number" style={{width:"100%",padding:8,borderRadius:8,border:"1px solid #ccc",marginTop:6,fontSize:12}}/><input value={bd} onChange={e=>setBd(e.target.value)} type="date" style={{width:"100%",padding:8,borderRadius:8,border:"1px solid #ccc",marginTop:6,fontSize:12}}/><input value={ph} onChange={e=>setPh(e.target.value)} placeholder="Parent Phone 024..." style={{width:"100%",padding:8,borderRadius:8,border:"1px solid #ccc",marginTop:6,fontSize:12}}/><div style={{display:"flex",gap:5,marginTop:6}}><button onClick={()=>setCtype("whatsapp")} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ccc",fontSize:9,fontWeight:"bold",background:ctype==="whatsapp"?"#25D366":"white",color:ctype==="whatsapp"?"white":"black",display:"flex",alignItems:"center",justifyContent:"center",gap:2}}><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width={12}/> WA</button><button onClick={()=>setCtype("sms")} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ccc",fontSize:9,fontWeight:"bold",background:ctype==="sms"?"#2563eb":"white",color:ctype==="sms"?"white":"black",display:"flex",alignItems:"center",justifyContent:"center",gap:2}}><img src="https://cdn-icons-png.flaticon.com/512/546/546394.png" width={10}/> SMS</button><button onClick={()=>setCtype("both")} style={{flex:1,padding:6,borderRadius:8,border:"1px solid #ccc",fontSize:9,fontWeight:"bold",background:ctype==="both"?"#00209F":"white",color:ctype==="both"?"white":"black"}}>Both</button></div><div style={{display:"flex",gap:6,marginTop:8}}><button onClick={add} style={{flex:1,background:"#00209F",color:"white",padding:8,borderRadius:8,border:"none",fontWeight:"bold"}}>{editId?"Update ✓":"Save ✓"}</button><button onClick={()=>{setShow(false);setEditId(null);setName("");setAge("");setBd("");setPh("");setImg("");}} style={{flex:1,background:"#ddd",padding:8,borderRadius:8,border:"none"}}>Cancel</button></div></div>}<div style={{marginTop:10}}>{list.map((c:any)=><div key={c.id} style={{display:"flex",alignItems:"center",gap:8,background:"white",border:"1px solid #eee",padding:8,borderRadius:10,marginTop:8}}>{c.img?<img src={c.img} width={45} height={45} style={{borderRadius:99,objectFit:"cover",border:"2px solid #00209F"}}/>:<div style={{width:45,height:45,borderRadius:99,background:"#FFD700",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#00209F"}}>{getIni(c.name)}</div>}<div style={{flex:1}}><b style={{fontSize:13}}>{c.name}</b><div style={{fontSize:10,color:"#666"}}>Age {c.age} • {c.phone}</div><div style={{fontSize:9,color:"#999"}}>BD: {c.bd||"No date"}</div></div><div style={{display:"flex",flexDirection:"column",gap:3}}><div style={{display:"flex",gap:3}}><button onClick={()=>startEdit(c)} style={{background:"#FFD700",border:"none",borderRadius:6,padding:"4px 8px",fontSize:10,fontWeight:"bold",color:"#00209F"}}>✏️ Edit</button><button onClick={()=>setList(list.filter(x=>x.id!==c.id))} style={{background:"#fee2e2",border:"none",borderRadius:6,padding:"4px 8px",fontSize:10,color:"#dc2626"}}>Del</button></div><div style={{display:"flex",gap:3}}><button onClick={()=>sendWA(c,false)} style={{background:"#25D366",border:"none",borderRadius:6,padding:4}}><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width={14}/></button><button onClick={()=>sendSMS(c,false)} style={{background:"#2563eb",border:"none",borderRadius:6,padding:4}}><img src="https://cdn-icons-png.flaticon.com/512/546/546394.png" width={12}/></button></div></div></div>)}</div></div>}{tab==="attendance"&&<div><b style={{fontSize:14,color:"#00209F"}}>Attendance - 7:00-9:30 AM</b><div style={{background:"#eff6ff",borderRadius:12,padding:8,marginTop:8,border:"2px solid #93c5fd"}}>{list.length===0&&<p style={{fontSize:12,textAlign:"center"}}>No children yet. Add in Children tab.</p>}{list.map((c:any)=><div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"white",padding:8,borderRadius:10,marginTop:8}}><span style={{display:"flex",alignItems:"center",gap:8}}>{c.img?<img src={c.img} width={36} height={36} style={{borderRadius:99,objectFit:"cover"}}/>:<div style={{width:36,height:36,borderRadius:99,background:"#FFD700",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:11,color:"#00209F"}}>{getIni(c.name)}</div>}<span style={{fontSize:13}}>{c.name}</span></span><button onClick={()=>toggle(c.id)} style={{padding:"6px 12px",borderRadius:99,border:"none",fontSize:11,fontWeight:"bold",background:c.present?"#16a34a":"#eee",color:c.present?"white":"black"}}>{c.present?"Present ✓":"Absent"}</button></div>)}<button onClick={finishBoth} style={{width:"100%",background:"#dc2626",color:"white",padding:14,borderRadius:12,border:"none",fontWeight:900,fontSize:12,marginTop:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width={20} height={20}/> + <img src="https://cdn-icons-png.flaticon.com/512/546/546394.png" width={16} height={16}/> AUTO SEND ABSENT WA+SMS</button></div></div>}{tab==="birthdays"&&<div><b style={{fontSize:14,color:"#be185d"}}>🎂 Birthdays</b>{bday.length===0?<div style={{background:"#fff",borderRadius:12,padding:20,marginTop:8,textAlign:"center",border:"1px solid #eee"}}><div style={{fontSize:40}}>🎂</div><p style={{fontSize:12,color:"#666"}}>No birthdays today</p></div>:<div style={{background:"#fce7f3",border:"2px solid #f472b6",borderRadius:12,padding:10,marginTop:8}}><b style={{fontSize:13,color:"#be185d"}}>{bday.length} Birthday Today!</b>{bday.map((c:any)=><div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"white",padding:10,borderRadius:10,marginTop:8}}><span style={{display:"flex",alignItems:"center",gap:8}}>{c.img?<img src={c.img} width={45} height={45} style={{borderRadius:99,objectFit:"cover",border:"2px solid #f472b6"}}/>:<div style={{width:45,height:45,borderRadius:99,background:"#FFD700",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,color:"#be185d"}}>{getIni(c.name)}</div>}<div><b style={{fontSize:14}}>{c.name}</b><div style={{fontSize:11,color:"#666"}}>{c.phone}</div></div></span><span style={{display:"flex",gap:4}}><button onClick={()=>sendWA(c,true)} style={{background:"#25D366",color:"white",border:"none",borderRadius:99,padding:"6px 10px",fontSize:10,fontWeight:"bold",display:"flex",alignItems:"center",gap:3}}><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width={14}/> WA</button><button onClick={()=>sendSMS(c,true)} style={{background:"#2563eb",color:"white",border:"none",borderRadius:99,padding:"6px 10px",fontSize:10,fontWeight:"bold",display:"flex",alignItems:"center",gap:3}}><img src="https://cdn-icons-png.flaticon.com/512/546/546394.png" width={12}/> SMS</button></span></div>)}<button onClick={sendBdayAll} style={{width:"100%",marginTop:12,background:"#db2777",color:"white",padding:12,borderRadius:12,border:"none",fontWeight:900,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width={18}/> + <img src="https://cdn-icons-png.flaticon.com/512/546/546394.png" width={14}/> AUTO SEND ALL BIRTHDAYS</button></div>}</div>}</div><p style={{textAlign:"center",fontSize:7,color:"#aaa",padding:8}}>COP Amanfrom • Edit Button Added • Sunday School Tracker</p></div></main>);
+  },[list]);
+
+  const addChild=()=>{
+    if(!name || !phone) return alert("Add name & phone");
+    const newChild:Child={id:Date.now().toString(), name, phone, bd, class:cls, present:true};
+    setList([...list,newChild]);
+    setName(""); setPhone(""); setBd("");
+  };
+  const toggle=(id:string)=>{ setList(list.map(c=> c.id===id ? {...c, present:!c.present}:c)); };
+  const finishBoth=()=>{
+    const ab=list.filter(x=>!x.present);
+    if(ab.length===0) return alert("All present!");
+    if(!confirm("AUTO SEND ABSENT? "+ab.length+" children")) return;
+    ab.forEach((c:any,i:number)=>{
+      setTimeout(()=>{
+        let p=c.phone.replace(/\D/g,""); if(p.startsWith("0")) p="233"+p.slice(1);
+        window.open(`https://wa.me/${p}?text=${encodeURIComponent("Hello parent of "+c.name+", "+c.name+" was absent from Sunday School today at COP Amanfrom. We missed them!")}`, "_blank");
+      }, i*2000);
+    });
+  };
+  const sendBdayAll=()=>{
+    const today = new Date().toISOString().slice(5,10);
+    const todays = list.filter(x=> x.bd && x.bd.slice(5,10)===today);
+    if(todays.length===0) return alert("No birthday today");
+    todays.forEach((c:any,i:number)=>{
+      setTimeout(()=>{
+        let p=c.phone.replace(/\D/g,""); if(p.startsWith("0")) p="233"+p.slice(1);
+        window.open(`https://wa.me/${p}?text=${encodeURIComponent("Happy Birthday "+c.name+"! 🎂🎉 From COP Amanfrom Sunday School")}`, "_blank");
+      }, i*2000);
+    });
+  };
+
+  return (
+    <main className="p-4 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold">COP Amanfrom - Sunday School Tracker</h1>
+      <div className="mt-4 border p-3 rounded">
+        <input className="border p-2 m-1" placeholder="Name" value={name} onChange={e=>setName(e.target.value)} />
+        <input className="border p-2 m-1" placeholder="Phone" value={phone} onChange={e=>setPhone(e.target.value)} />
+        <input className="border p-2 m-1" type="date" value={bd} onChange={e=>setBd(e.target.value)} />
+        <button className="bg-blue-600 text-white p-2 rounded m-1" onClick={addChild}>Add Child</button>
+      </div>
+      <div className="mt-4 flex gap-2">
+        <button className="bg-green-600 text-white p-2 rounded" onClick={sendBdayAll}>🎂 AUTO SEND Birthday</button>
+        <button className="bg-red-600 text-white p-2 rounded" onClick={finishBoth}>📨 AUTO SEND Absent</button>
+      </div>
+      <div className="mt-4">
+        <h2 className="font-bold">Children ({list.length})</h2>
+        {list.map(c=>(
+          <div key={c.id} className="border p-2 mt-1 flex justify-between">
+            <span>{c.name} - {c.phone} - {c.bd} - {c.present?"Present ✅":"Absent ❌"}</span>
+            <button className="bg-gray-200 p-1" onClick={()=>toggle(c.id)}>Toggle</button>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
 }
